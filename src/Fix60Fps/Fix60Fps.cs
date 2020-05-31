@@ -34,6 +34,16 @@ namespace OpenMLTD.MMMPlugins.Fix60Fps {
                 return;
             }
 
+            var needsConversion = NeedsConversion(out var message);
+
+            if (!needsConversion) {
+                if (message != null) {
+                    MessageBox.Show(message, Description, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    e.Cancel = true;
+                    return;
+                }
+            }
+
             foreach (var model in scene.Models) {
                 foreach (var bone in model.Bones) {
                     foreach (var layer in bone.Layers) {
@@ -57,6 +67,35 @@ namespace OpenMLTD.MMMPlugins.Fix60Fps {
                     }
                 }
             }
+        }
+
+        private bool NeedsConversion(out string message) {
+            var scene = Scene;
+
+            if (scene.Models.Count == 0) {
+                message = "There is no model in the scene.";
+                return false;
+            }
+
+            foreach (var model in scene.Models) {
+                foreach (var bone in model.Bones) {
+                    foreach (var layer in bone.Layers) {
+                        if (layer.Frames.Count > 2) {
+                            var f0 = layer.Frames[0];
+                            var f1 = layer.Frames[1];
+                            var f2 = layer.Frames[2];
+
+                            if (f1.FrameNumber - f0.FrameNumber == 2 && f2.FrameNumber - f1.FrameNumber == 2) {
+                                message = null;
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            message = "No 30 fps signature is found in frames. The motions may already be in 60 fps.";
+            return false;
         }
 
         // 69f4cacb-c525-4fbd-b84e-58cb9021f2e5
